@@ -23,6 +23,7 @@
 #include "open_spiel/spiel.h"
 #include "open_spiel/spiel_utils.h"
 #include "open_spiel/algorithms/external_sampling_mccfr.h"
+#include "open_spiel/games/universal_poker/handIndex/index.h"
 
 
 ABSL_FLAG(bool, show_legals, false, "Show the legal moves.");
@@ -72,6 +73,9 @@ int main(int argc, char **argv) {
     params["raiseSize"] = open_spiel::GameParameter(absl::GetFlag(FLAGS_raiseSize));
     params["maxRaises"] = open_spiel::GameParameter(absl::GetFlag(FLAGS_maxRaises));
     params["bettingAbstraction"] = open_spiel::GameParameter(absl::GetFlag(FLAGS_bettingAbstraction));
+
+    open_spiel::universal_poker::abstracted_poker::handIndex::preflopIndexer indexer;
+    indexer.print_table();
 
     // Random number generator.
     int seed = 0;

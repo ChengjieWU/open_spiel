@@ -102,8 +102,7 @@ const GameType kGameType{
      // Specify which actions are available to the player, in both limit and
      // nolimit games. Available options are: "fc" for fold and check/call.
      // "fcpa" for fold, check/call, bet pot and all in (default).
-     {"bettingAbstraction", GameParameter(std::string("fcpa"))},
-     {"players", GameParameter(0)}}}; //TODO: 不知道为什么，这边一定要加上这个测试
+     {"bettingAbstraction", GameParameter(std::string("fcpa"))}}};
 
 std::shared_ptr<const Game> Factory(const GameParameters &params) {
   return std::shared_ptr<const Game>(new UniversalPokerGame(params));

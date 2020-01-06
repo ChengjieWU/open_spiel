@@ -82,6 +82,11 @@ if [[ ${BUILD_WITH_ACPC:-"ON"} == "ON" ]] && [[ ! -d ${DIR} ]]; then
   git clone -b 'master' --single-branch --depth 1  https://github.com/jblespiau/project_acpc_server.git ${DIR}
 fi
 
+DIR="open_spiel/games/universal_poker/handIndex/hand-isomorphism"
+if [[ ${BUILD_WITH_ACPC:-"ON"} == "ON" ]] && [[ ! -d ${DIR} ]]; then
+  git clone -b 'master' --single-branch --depth 1 https://github.com/kdub0/hand-isomorphism.git ${DIR}
+fi
+
 
 # 2. Install other required system-wide dependencies
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
