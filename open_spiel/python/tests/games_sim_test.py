@@ -62,6 +62,7 @@ SPIEL_MULTIPLAYER_GAMES_LIST = [
     g.short_name != "tiny_hanabi"  # default payoff only works for 2p
     # cannot change the number of players without changing other parameters
     and g.short_name != "universal_poker"
+    and g.short_name != "abstracted_poker"
 ]
 assert len(SPIEL_MULTIPLAYER_GAMES_LIST) >= 35, len(
     SPIEL_MULTIPLAYER_GAMES_LIST)

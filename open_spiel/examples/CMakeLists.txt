@@ -19,4 +19,4 @@ add_test(cfr_example_test cfr_example)
 add_executable(gtp gtp.cc ${OPEN_SPIEL_OBJECTS})
 
 add_executable(abstracted_example abstracted_example.cc ${OPEN_SPIEL_OBJECTS})
-add_test(abstracted_example_test abstracted_example)
+# add_test(abstracted_example_test abstracted_example)

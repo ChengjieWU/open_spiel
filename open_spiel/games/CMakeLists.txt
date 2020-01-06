@@ -85,6 +85,7 @@ if (${BUILD_WITH_HANABI})
 endif()
 if (${BUILD_WITH_ACPC})
   set(GAME_SOURCES ${GAME_SOURCES} universal_poker.cc universal_poker.h)
+  set(GAME_SOURCES ${GAME_SOURCES} abstracted_poker.cc abstracted_poker.h)
 endif()
 
 add_library (games OBJECT ${GAME_SOURCES})
@@ -315,6 +316,11 @@ if (${BUILD_WITH_ACPC})
           $<TARGET_OBJECTS:tests>
           $<TARGET_OBJECTS:algorithms>)
   add_test(universal_poker_test.cc universal_poker_test)
+
+  add_executable(abstracted_poker_test abstracted_poker_test.cc ${OPEN_SPIEL_OBJECTS}
+          $<TARGET_OBJECTS:tests>
+          $<TARGET_OBJECTS:algorithms>)
+  add_test(abstracted_poker_test.cc abstracted_poker_test)
 endif()
 
 add_executable(y_test y_test.cc ${OPEN_SPIEL_OBJECTS}
