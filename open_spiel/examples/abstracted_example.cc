@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
     params["maxRaises"] = open_spiel::GameParameter(absl::GetFlag(FLAGS_maxRaises));
     params["bettingAbstraction"] = open_spiel::GameParameter(absl::GetFlag(FLAGS_bettingAbstraction));
 
-    open_spiel::universal_poker::abstracted_poker::handIndex::preflopIndexer indexer;
+    open_spiel::universal_poker::abstracted_poker::hand_index::preflopIndexer indexer;
     indexer.print_table();
     // open_spiel::universal_poker::abstracted_poker::handIndex::generalIndexer indexer2(2);
     // std::cout << "getsize: " << indexer2.getSize(2) << std::endl;

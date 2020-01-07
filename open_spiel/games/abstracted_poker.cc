@@ -111,11 +111,11 @@ std::shared_ptr<const Game> Factory(const GameParameters &params) {
 
 REGISTER_SPIEL_GAME(kGameType, Factory);
 
-handIndex::generalIndexer indexer_1(1);
-handIndex::generalIndexer indexer_2(2);
-handIndex::generalIndexer indexer_3(3);
-handIndex::generalIndexer indexer_4(4);
-handIndex::generalIndexer inDexers[4] = {indexer_1, indexer_2, indexer_3, indexer_4};
+hand_index::generalIndexer indexer_1(1);
+hand_index::generalIndexer indexer_2(2);
+hand_index::generalIndexer indexer_3(3);
+hand_index::generalIndexer indexer_4(4);
+hand_index::generalIndexer inDexers[4] = {indexer_1, indexer_2, indexer_3, indexer_4};
 // std::vector<handIndex::generalIndexer> indexer {indexer_1, indexer_2, indexer_3, indexer_4};
 
 // Returns how many actions are available at a choice node (3 when limit
