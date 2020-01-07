@@ -26,6 +26,7 @@
 #include "open_spiel/games/universal_poker/logic/card_set.h"
 #include "open_spiel/spiel.h"
 #include "open_spiel/spiel_utils.h"
+#include "open_spiel/games/universal_poker/handIndex/index.h"
 
 namespace open_spiel {
 namespace universal_poker {
@@ -110,12 +111,20 @@ std::shared_ptr<const Game> Factory(const GameParameters &params) {
 
 REGISTER_SPIEL_GAME(kGameType, Factory);
 
+handIndex::generalIndexer indexer_1(1);
+handIndex::generalIndexer indexer_2(2);
+handIndex::generalIndexer indexer_3(3);
+handIndex::generalIndexer indexer_4(4);
+handIndex::generalIndexer inDexers[4] = {indexer_1, indexer_2, indexer_3, indexer_4};
+// std::vector<handIndex::generalIndexer> indexer {indexer_1, indexer_2, indexer_3, indexer_4};
+
 // Returns how many actions are available at a choice node (3 when limit
 // and 4 for no limit).
 // TODO(author2): Is that a bug? There are 5 actions? Is no limit means
 // "bet bot" is added? or should "all in" be also added?
+// Add half-pot bet, 4 -> 5
 inline uint32_t GetMaxBettingActions(const acpc_cpp::ACPCGame &acpc_game) {
-  return acpc_game.IsLimitGame() ? 3 : 4;
+  return acpc_game.IsLimitGame() ? 3 : 5;
 }
 
 // namespace universal_poker
@@ -166,6 +175,7 @@ std::string UniversalPokerState::ToString() const {
       buf << ((action == ACTION_CHECK_CALL) ? " ACTION_CHECK_CALL " : "");
       buf << ((action == ACTION_FOLD) ? " ACTION_FOLD " : "");
       buf << ((action == ACTION_DEAL) ? " ACTION_DEAL " : "");
+      buf << ((action == ACTION_BET_HALF_POT) ? " ACTION_BET_HALF_POT " : "");
     }
   }
   buf << "]" << std::endl;
@@ -272,6 +282,10 @@ void UniversalPokerState::InformationStateTensor(
       // Encode raise as 01.
       (*values)[offset + (2 * i)] = 1;
       (*values)[offset + (2 * i) + 1] = 1;
+    } else if (actionSeq[i] == 'h') {
+      // Encode raise as 01.
+      (*values)[offset + (2 * i)] = 1;
+      (*values)[offset + (2 * i) + 1] = 1;
     } else if (actionSeq[i] == 'f') {
       // Encode fold as 00.
       // TODO(author2): Should this be 11?
@@ -348,12 +362,36 @@ std::string UniversalPokerState::InformationStateString(Player player) const {
     sequences.emplace_back(acpc_state_.BettingSequence(r));
   }
 
+  // We apply infoset abstraction here!
+
+  // uint64_t cards_index = inDexers[acpc_state_.GetRound()].index(hole_cards_[player].ToString() + board_cards_.ToString());
+  // std::cerr << acpc_state_.GetRound() << std::endl;
+  // std::cerr << "hole cards: " << hole_cards_[player].ToString() << std::endl;
+  // std::cerr << "board cards: " << board_cards_.ToString() << std::endl;
+  // std::cerr << "hole cards + board cards: " << hole_cards_[player].ToString() + board_cards_.ToString() << std::endl;
+  // std::cerr << "cards index: " << cards_index << std::endl;
+  // std::string cards_string = inDexers[acpc_state_.GetRound()].canonicalHand((uint64_t)cards_index);
+  // std::string hole_cards_abs_ = cards_string.substr(0, 4);
+  // std::string board_cards_abs_ = cards_string.substr(4);
+  // std::cerr << "cards_string: " << cards_string << std::endl;
+  // std::cerr << hole_cards_abs_ << std::endl;
+  // std::cerr << board_cards_abs_ << std::endl;
+
   return absl::StrFormat(
       "[Round %i][Player: %i][Pot: %i][Money: %s][Private: %s][Public: "
       "%s][Sequences: %s]",
       acpc_state_.GetRound(), CurrentPlayer(), pot, absl::StrJoin(money, " "),
       hole_cards_[player].ToString(), board_cards_.ToString(),
       absl::StrJoin(sequences, "|"));
+  // std::stringstream ss;
+  // ss << cards_index;
+  // std::string out_string;
+  // out_string = ss.str();
+  // return absl::StrFormat(
+  //     "[Round %i][Player: %i][Pot: %i][Money: %s][Private: %s][Sequences: %s]",
+  //     acpc_state_.GetRound(), CurrentPlayer(), pot, absl::StrJoin(money, " "),
+  //     out_string,
+  //     absl::StrJoin(sequences, "|"));
 }
 
 std::string UniversalPokerState::ObservationString(Player player) const {
@@ -417,6 +455,7 @@ std::vector<Action> UniversalPokerState::LegalActions() const {
   if (ACTION_CHECK_CALL & possibleActions_) legal_actions.push_back(kCall);
   if (ACTION_BET & possibleActions_) legal_actions.push_back(kBet);
   if (ACTION_ALL_IN & possibleActions_) legal_actions.push_back(kAllIn);
+  if (ACTION_BET_HALF_POT & possibleActions_) legal_actions.push_back(kBetHalfPot);
   return legal_actions;
 }
 
@@ -461,6 +500,10 @@ void UniversalPokerState::DoApplyAction(Action action_id) {
     }
     if (action_int == kAllIn) {
       ApplyChoiceAction(ACTION_ALL_IN);
+      return;
+    }
+    if (action_int == kBetHalfPot) {
+      ApplyChoiceAction(ACTION_BET_HALF_POT);
       return;
     }
     SpielFatalError(absl::StrFormat("Action not recognized: %i", action_id));
@@ -708,7 +751,7 @@ std::string UniversalPokerGame::parseParameters(const GameParameters &map) {
   return generated_gamedef;
 }
 
-const char *actions = "0df0c000p0000000a";
+const char *actions = "0df0c000p0000000a000000000000000h";
 
 void UniversalPokerState::ApplyChoiceAction(ActionType action_type) {
   SPIEL_CHECK_GE(cur_player_, 0);  // No chance not terminal.
@@ -729,6 +772,9 @@ void UniversalPokerState::ApplyChoiceAction(ActionType action_type) {
     case ACTION_ALL_IN:
       acpc_state_.DoAction(acpc_cpp::ACPCState::ACPCActionType::ACPC_RAISE,
                            allInSize_);
+      break;
+    case ACTION_BET_HALF_POT:
+      acpc_state_.DoAction(acpc_cpp::ACPCState::ACPCActionType::ACPC_RAISE, halfpotSize_);
       break;
     case ACTION_DEAL:
     default:
@@ -789,12 +835,18 @@ void UniversalPokerState::_CalculateActionsAndNodeType() {
 
     potSize_ = 0;
     allInSize_ = 0;
+    halfpotSize_ = 0;
     // We have to call this as this sets potSize_ and allInSize_.
+    /* TODO: 这边非常奇怪，受acpc_game_server限制，最小就要bet pot size。这边的half实际上是double */
     bool valid_to_raise = acpc_state_.RaiseIsValid(&potSize_, &allInSize_);
+    halfpotSize_ = int((potSize_ - acpc_state_.Ante(cur_player_)) * 2) + acpc_state_.Ante(cur_player_);
     if (betting_abstraction_ == BettingAbstraction::kFC) return;
     if (valid_to_raise) {
       // It's always valid to bet the pot.
       possibleActions_ |= ACTION_BET;
+      if (halfpotSize_ > potSize_ && halfpotSize_ < allInSize_) {
+        possibleActions_ |= ACTION_BET_HALF_POT;
+      }
       if (acpc_game_->IsLimitGame()) {
         potSize_ = 0;
       } else {

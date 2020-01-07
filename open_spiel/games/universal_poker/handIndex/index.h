@@ -38,21 +38,21 @@ public:
 /* generalIndexer */
 struct generalIndexer {
 private:
-    uint8_t round;
+    int round;
     hand_indexer_t general_indexer;
     hand_index_t size[4];
-    uint8_t cards_num[4];
+    int cards_num[4];
 public:
-    explicit generalIndexer(uint8_t);
+    explicit generalIndexer(int);
 
     // void print_table();
     hand_index_t index(std::string);
 
-    std::string canonicalHand(card_t);
+    std::string canonicalHand(hand_index_t);
 
     hand_index_t getSize(int);
 
-    uint8_t getCardsNum(int);
+    int getCardsNum(int);
 };
 
 }
