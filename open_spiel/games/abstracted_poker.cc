@@ -372,14 +372,13 @@ std::string UniversalPokerState::InformationStateString(Player player) const {
 //   std::cerr << hole_cards_abs_ << std::endl;
 //   std::cerr << board_cards_abs_ << std::endl;
 
-   std::stringstream ss;
-   ss << cards_index;
-   std::string out_string;
-   out_string = ss.str();
+   // TODO: we use a fake cluster result here!
+   int cluster_index = cards_index % 200;
+
    return absl::StrFormat(
-       "[Round %i][Player: %i][Pot: %i][Money: %s][InfoAbs: %s][Sequences: %s]",
+       "[Round %i][Player: %i][Pot: %i][Money: %s][InfoAbs: %i][Sequences: %s]",
        acpc_state_.GetRound(), CurrentPlayer(), pot, absl::StrJoin(money, " "),
-       out_string,
+       cluster_index,
        absl::StrJoin(sequences, "|"));
 }
 
