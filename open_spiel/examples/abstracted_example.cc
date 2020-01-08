@@ -74,13 +74,6 @@ int main(int argc, char **argv) {
     params["maxRaises"] = open_spiel::GameParameter(absl::GetFlag(FLAGS_maxRaises));
     params["bettingAbstraction"] = open_spiel::GameParameter(absl::GetFlag(FLAGS_bettingAbstraction));
 
-    open_spiel::universal_poker::abstracted_poker::hand_index::preflopIndexer indexer;
-    indexer.print_table();
-    // open_spiel::universal_poker::abstracted_poker::handIndex::generalIndexer indexer2(2);
-    // std::cout << "getsize: " << indexer2.getSize(2) << std::endl;
-    // std::cout << "index: " << indexer2.index("6s9dAsAh7s8sTh") << std::endl;
-    // std::cout << "canonical: " << indexer2.canonicalHand(1710805295) << std::endl;
-
     // Random number generator.
     int seed = 0;
     std::mt19937 rng(seed ? seed : time(0));
@@ -94,79 +87,78 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    // open_spiel::algorithms::ExternalSamplingMCCFRSolver solver(*game);
-    // std::cerr << "Starting ExternalSamplingMCCFR on " << game->GetType().short_name
-    //           << "..." << std::endl;
-    // for (int i = 0; i < 1; i++) {
-    //     solver.RunIteration();
-    // }
-    
+     open_spiel::algorithms::ExternalSamplingMCCFRSolver solver(*game);
+     std::cerr << "Starting ExternalSamplingMCCFR on " << game->GetType().short_name
+               << "..." << std::endl;
+     for (int i = 0; i < 1; i++) {
+         solver.RunIteration();
+     }
 
-    std::cerr << "Starting new game..." << std::endl;
-    std::unique_ptr<open_spiel::State> state = game->NewInitialState();
-
-    std::cerr << "Initial state:" << std::endl;
-    std::cerr << "State:" << std::endl
-              << state->ToString() << std::endl;
-
-    while (!state->IsTerminal()) {
-        std::cerr << "player " << state->CurrentPlayer() << std::endl;
-
-        if (state->IsChanceNode()) {
-            // Chance node; sample one according to underlying distribution.
-            std::vector<std::pair<open_spiel::Action, double>> outcomes =
-                state->ChanceOutcomes();
-            open_spiel::Action action =
-                open_spiel::SampleAction(
-                    outcomes, std::uniform_real_distribution<double>(0.0, 1.0)(rng))
-                    .first;
-            std::cerr << "sampled outcome: "
-                      << state->ActionToString(open_spiel::kChancePlayerId, action)
-                      << std::endl;
-            state->ApplyAction(action);
-        } else if (state->IsSimultaneousNode()) {
-            // open_spiel::Players choose simultaneously?
-            std::vector<open_spiel::Action> joint_action;
-            std::vector<double> infostate;
-
-            // Sample a action for each player
-            for (auto player = open_spiel::Player{0}; player < game->NumPlayers();
-                 ++player) {
-                std::vector<open_spiel::Action> actions = state->LegalActions(player);
-                if (show_legals) {
-                    PrintLegalActions(*state, player, actions);
-                }
-
-                absl::uniform_int_distribution<> dis(0, actions.size() - 1);
-                open_spiel::Action action = actions[dis(rng)];
-                joint_action.push_back(action);
-                std::cerr << "player " << player << " chose "
-                          << state->ActionToString(player, action) << std::endl;
-            }
-
-            state->ApplyActions(joint_action);
-        } else {
-            // Decision node, sample one uniformly.
-            auto player = state->CurrentPlayer();
-            std::vector<open_spiel::Action> actions = state->LegalActions();
-            if (show_legals) {
-                PrintLegalActions(*state, player, actions);
-            }
-
-            absl::uniform_int_distribution<> dis(0, actions.size() - 1);
-            auto action = actions[dis(rng)];
-            std::cerr << "chose action: " << state->ActionToString(player, action)
-                      << std::endl;
-            state->ApplyAction(action);
-        }
-
-        std::cerr << "State: " << std::endl
-                  << state->ToString() << std::endl;
-    }
-
-    auto returns = state->Returns();
-    for (auto p = open_spiel::Player{0}; p < game->NumPlayers(); p++) {
-        std::cerr << "Final return to player " << p << " is " << returns[p]
-                  << std::endl;
-    }
+//    std::cerr << "Starting new game..." << std::endl;
+//    std::unique_ptr<open_spiel::State> state = game->NewInitialState();
+//
+//    std::cerr << "Initial state:" << std::endl;
+//    std::cerr << "State:" << std::endl
+//              << state->ToString() << std::endl;
+//
+//    while (!state->IsTerminal()) {
+//        std::cerr << "player " << state->CurrentPlayer() << std::endl;
+//
+//        if (state->IsChanceNode()) {
+//            // Chance node; sample one according to underlying distribution.
+//            std::vector<std::pair<open_spiel::Action, double>> outcomes =
+//                state->ChanceOutcomes();
+//            open_spiel::Action action =
+//                open_spiel::SampleAction(
+//                    outcomes, std::uniform_real_distribution<double>(0.0, 1.0)(rng))
+//                    .first;
+//            std::cerr << "sampled outcome: "
+//                      << state->ActionToString(open_spiel::kChancePlayerId, action)
+//                      << std::endl;
+//            state->ApplyAction(action);
+//        } else if (state->IsSimultaneousNode()) {
+//            // open_spiel::Players choose simultaneously?
+//            std::vector<open_spiel::Action> joint_action;
+//            std::vector<double> infostate;
+//
+//            // Sample a action for each player
+//            for (auto player = open_spiel::Player{0}; player < game->NumPlayers();
+//                 ++player) {
+//                std::vector<open_spiel::Action> actions = state->LegalActions(player);
+//                if (show_legals) {
+//                    PrintLegalActions(*state, player, actions);
+//                }
+//
+//                absl::uniform_int_distribution<> dis(0, actions.size() - 1);
+//                open_spiel::Action action = actions[dis(rng)];
+//                joint_action.push_back(action);
+//                std::cerr << "player " << player << " chose "
+//                          << state->ActionToString(player, action) << std::endl;
+//            }
+//
+//            state->ApplyActions(joint_action);
+//        } else {
+//            // Decision node, sample one uniformly.
+//            auto player = state->CurrentPlayer();
+//            std::vector<open_spiel::Action> actions = state->LegalActions();
+//            if (show_legals) {
+//                PrintLegalActions(*state, player, actions);
+//            }
+//
+//            absl::uniform_int_distribution<> dis(0, actions.size() - 1);
+//            auto action = actions[dis(rng)];
+//            std::cerr << "chose action: " << state->ActionToString(player, action)
+//                      << std::endl;
+//            state->ApplyAction(action);
+//        }
+//
+//        std::cerr << "State: " << std::endl
+//                  << state->ToString() << std::endl;
+//    }
+//
+//    auto returns = state->Returns();
+//    for (auto p = open_spiel::Player{0}; p < game->NumPlayers(); p++) {
+//        std::cerr << "Final return to player " << p << " is " << returns[p]
+//                  << std::endl;
+//    }
 }

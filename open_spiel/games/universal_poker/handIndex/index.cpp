@@ -24,7 +24,7 @@ preflopIndexer::preflopIndexer() {
     this->size = hand_indexer_size(&preflop_indexer, 0);
 }
 
-void preflopIndexer::print_table() {
+void preflopIndexer::print_table() const{
     uint8_t cards[7];
     printf("preflop table:\n");
     printf(" ");
@@ -46,7 +46,7 @@ void preflopIndexer::print_table() {
     }
 }
 
-hand_index_t preflopIndexer::index(std::string cardString) {
+hand_index_t preflopIndexer::index(std::string cardString) const{
     uint8_t cards[7];
     assert(cardString.size() <= 2);
     for (int i = 0; i < cardString.size(); i += 2) {
@@ -60,7 +60,7 @@ hand_index_t preflopIndexer::index(std::string cardString) {
     return index;
 }
 
-std::string preflopIndexer::canonicalHand(hand_index_t cardId) {
+std::string preflopIndexer::canonicalHand(hand_index_t cardId) const {
     assert(cardId < size);
     uint8_t cards[7];
     hand_unindex(&preflop_indexer, 0, cardId, cards);
@@ -74,7 +74,7 @@ std::string preflopIndexer::canonicalHand(hand_index_t cardId) {
     return result.str();
 }
 
-hand_index_t preflopIndexer::getSize() {
+hand_index_t preflopIndexer::getSize() const {
     return size;
 }
 
@@ -92,7 +92,7 @@ generalIndexer::generalIndexer(int r) {
     }
 }
 
-hand_index_t generalIndexer::index(std::string cardString) {
+hand_index_t generalIndexer::index(std::string cardString) const {
     assert(cardString.size() <= 2 * 7);
     uint8_t cards[7];
     for (int i = 0; i < cardString.size(); i += 2) {
@@ -105,7 +105,7 @@ hand_index_t generalIndexer::index(std::string cardString) {
     return hand_index_last(&general_indexer, cards);
 }
 
-std::string generalIndexer::canonicalHand(hand_index_t cardId) {
+std::string generalIndexer::canonicalHand(hand_index_t cardId) const {
     // std::cerr << "IN CAL: " << cardId << std::endl;
     assert(cardId < size[round - 1]);
     uint8_t cards[7];
@@ -121,12 +121,12 @@ std::string generalIndexer::canonicalHand(hand_index_t cardId) {
     return result.str();
 }
 
-hand_index_t generalIndexer::getSize(int r) {
+hand_index_t generalIndexer::getSize(int r) const {
     assert(r >= 1 && r <= round);
     return size[r - 1];
 }
 
-int generalIndexer::getCardsNum(int r) {
+int generalIndexer::getCardsNum(int r) const {
     assert(r >= 1 && r <= round);
     return cards_num[r - 1];
 }

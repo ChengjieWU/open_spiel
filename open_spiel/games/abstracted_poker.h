@@ -23,6 +23,7 @@
 #include "open_spiel/games/universal_poker/acpc_cpp/acpc_game.h"
 #include "open_spiel/games/universal_poker/logic/card_set.h"
 #include "open_spiel/spiel.h"
+#include "open_spiel/games/universal_poker/handIndex/index.h"
 
 // This is a wrapper around the Annual Computer Poker Competition bot (ACPC)
 // environment. See http://www.computerpokercompetition.org/. The code is
@@ -69,6 +70,9 @@ class UniversalPokerState : public State {
 
   // Used to make UpdateIncrementalStateDistribution much faster.
   HistoryDistribution GetHistoriesConsistentWithInfostate() const override;
+
+  uint64_t GetIndex(int round, std::string hand) const;
+  std::string GetCanonicalHand(int round, uint64_t  card_id) const;
 
  protected:
   void DoApplyAction(Action action_id) override;
@@ -133,6 +137,10 @@ class UniversalPokerGame : public Game {
   BettingAbstraction betting_abstraction() const {
     return betting_abstraction_;
   }
+  hand_index::generalIndexer preflop_indexer;
+  hand_index::generalIndexer flop_indexer;
+  hand_index::generalIndexer turn_indexer;
+  hand_index::generalIndexer river_indexer;
 
  private:
   std::string gameDesc_;

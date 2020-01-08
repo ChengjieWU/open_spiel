@@ -111,13 +111,6 @@ std::shared_ptr<const Game> Factory(const GameParameters &params) {
 
 REGISTER_SPIEL_GAME(kGameType, Factory);
 
-hand_index::generalIndexer indexer_1(1);
-hand_index::generalIndexer indexer_2(2);
-hand_index::generalIndexer indexer_3(3);
-hand_index::generalIndexer indexer_4(4);
-hand_index::generalIndexer inDexers[4] = {indexer_1, indexer_2, indexer_3, indexer_4};
-// std::vector<handIndex::generalIndexer> indexer {indexer_1, indexer_2, indexer_3, indexer_4};
-
 // Returns how many actions are available at a choice node (3 when limit
 // and 4 for no limit).
 // TODO(author2): Is that a bug? There are 5 actions? Is no limit means
@@ -364,34 +357,30 @@ std::string UniversalPokerState::InformationStateString(Player player) const {
 
   // We apply infoset abstraction here!
 
-  // uint64_t cards_index = inDexers[acpc_state_.GetRound()].index(hole_cards_[player].ToString() + board_cards_.ToString());
-  // std::cerr << acpc_state_.GetRound() << std::endl;
-  // std::cerr << "hole cards: " << hole_cards_[player].ToString() << std::endl;
-  // std::cerr << "board cards: " << board_cards_.ToString() << std::endl;
-  // std::cerr << "hole cards + board cards: " << hole_cards_[player].ToString() + board_cards_.ToString() << std::endl;
-  // std::cerr << "cards index: " << cards_index << std::endl;
-  // std::string cards_string = inDexers[acpc_state_.GetRound()].canonicalHand((uint64_t)cards_index);
-  // std::string hole_cards_abs_ = cards_string.substr(0, 4);
-  // std::string board_cards_abs_ = cards_string.substr(4);
-  // std::cerr << "cards_string: " << cards_string << std::endl;
-  // std::cerr << hole_cards_abs_ << std::endl;
-  // std::cerr << board_cards_abs_ << std::endl;
+  // Debug output
+//   std::cerr << "*************************************************\n";
+//   std::cerr << acpc_state_.GetRound() << std::endl;
+//   std::cerr << "hole cards: " << hole_cards_[player].ToString() << std::endl;
+//   std::cerr << "board cards: " << board_cards_.ToString() << std::endl;
+//   std::cerr << "hole cards + board cards: " << hole_cards_[player].ToString() + board_cards_.ToString() << std::endl;
+   uint64_t cards_index = GetIndex(acpc_state_.GetRound() + 1, hole_cards_[player].ToString() + board_cards_.ToString());
+//   std::cerr << "cards index: " << cards_index << std::endl;
+//   std::string cards_string = GetCanonicalHand(acpc_state_.GetRound() + 1, cards_index);
+//   std::string hole_cards_abs_ = cards_string.substr(0, 4);
+//   std::string board_cards_abs_ = cards_string.substr(4);
+//   std::cerr << "cards_string: " << cards_string << std::endl;
+//   std::cerr << hole_cards_abs_ << std::endl;
+//   std::cerr << board_cards_abs_ << std::endl;
 
-  return absl::StrFormat(
-      "[Round %i][Player: %i][Pot: %i][Money: %s][Private: %s][Public: "
-      "%s][Sequences: %s]",
-      acpc_state_.GetRound(), CurrentPlayer(), pot, absl::StrJoin(money, " "),
-      hole_cards_[player].ToString(), board_cards_.ToString(),
-      absl::StrJoin(sequences, "|"));
-  // std::stringstream ss;
-  // ss << cards_index;
-  // std::string out_string;
-  // out_string = ss.str();
-  // return absl::StrFormat(
-  //     "[Round %i][Player: %i][Pot: %i][Money: %s][Private: %s][Sequences: %s]",
-  //     acpc_state_.GetRound(), CurrentPlayer(), pot, absl::StrJoin(money, " "),
-  //     out_string,
-  //     absl::StrJoin(sequences, "|"));
+   std::stringstream ss;
+   ss << cards_index;
+   std::string out_string;
+   out_string = ss.str();
+   return absl::StrFormat(
+       "[Round %i][Player: %i][Pot: %i][Money: %s][InfoAbs: %s][Sequences: %s]",
+       acpc_state_.GetRound(), CurrentPlayer(), pot, absl::StrJoin(money, " "),
+       out_string,
+       absl::StrJoin(sequences, "|"));
 }
 
 std::string UniversalPokerState::ObservationString(Player player) const {
@@ -573,6 +562,36 @@ HistoryDistribution UniversalPokerState::GetHistoriesConsistentWithInfostate()
   return dist;
 }
 
+uint64_t UniversalPokerState::GetIndex(int round, std::string hand) const {
+    switch (round) {
+        case 1:
+            return dynamic_cast<const UniversalPokerGame *>(game_.get())->preflop_indexer.index(hand);
+        case 2:
+            return dynamic_cast<const UniversalPokerGame *>(game_.get())->flop_indexer.index(hand);
+        case 3:
+            return dynamic_cast<const UniversalPokerGame *>(game_.get())->turn_indexer.index(hand);
+        case 4:
+            return dynamic_cast<const UniversalPokerGame *>(game_.get())->river_indexer.index(hand);
+        default:
+            SpielFatalError("Round not supported!");
+    }
+}
+
+std::string UniversalPokerState::GetCanonicalHand(int round, uint64_t  card_id) const {
+    switch (round) {
+        case 1:
+            return dynamic_cast<const UniversalPokerGame *>(game_.get())->preflop_indexer.canonicalHand(card_id);
+        case 2:
+            return dynamic_cast<const UniversalPokerGame *>(game_.get())->flop_indexer.canonicalHand(card_id);
+        case 3:
+            return dynamic_cast<const UniversalPokerGame *>(game_.get())->turn_indexer.canonicalHand(card_id);
+        case 4:
+            return dynamic_cast<const UniversalPokerGame *>(game_.get())->river_indexer.canonicalHand(card_id);
+        default:
+            SpielFatalError("Round not supported!");
+    }
+}
+
 /**
  * Universal Poker Game Constructor
  * @param params
@@ -580,7 +599,8 @@ HistoryDistribution UniversalPokerState::GetHistoriesConsistentWithInfostate()
 UniversalPokerGame::UniversalPokerGame(const GameParameters &params)
     : Game(kGameType, params),
       gameDesc_(parseParameters(params)),
-      acpc_game_(gameDesc_) {
+      acpc_game_(gameDesc_),
+      preflop_indexer(1), flop_indexer(2), turn_indexer(3), river_indexer(4) {
   max_game_length_ = MaxGameLength();
   SPIEL_CHECK_TRUE(max_game_length_.has_value());
   std::string betting_abstraction =

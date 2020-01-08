@@ -22,10 +22,10 @@ private:
     hand_index_t size;
 public:
     preflopIndexer();
-    void print_table();
-    hand_index_t index(std::string);
-    std::string canonicalHand(hand_index_t);
-    hand_index_t getSize();
+    void print_table() const;
+    hand_index_t index(std::string) const;
+    std::string canonicalHand(hand_index_t) const;
+    hand_index_t getSize() const;
 };
 
 
@@ -38,10 +38,10 @@ private:
     int cards_num[4];
 public:
     explicit generalIndexer(int);
-    hand_index_t index(std::string);
-    std::string canonicalHand(hand_index_t);
-    hand_index_t getSize(int);
-    int getCardsNum(int);
+    hand_index_t index(std::string) const;
+    std::string canonicalHand(hand_index_t) const;
+    hand_index_t getSize(int) const;
+    int getCardsNum(int) const;
 };
 
 }   // hand_index
