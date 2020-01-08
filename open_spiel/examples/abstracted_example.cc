@@ -115,6 +115,10 @@ int main(int argc, char **argv) {
     }
     std::cout << std::endl;
 
+    std::cout << state->InformationStateString() << std::endl;
+    state = state->Child(3);
+    std::cout << state->InformationStateString() << std::endl;
+
 //     open_spiel::algorithms::ExternalSamplingMCCFRSolver solver(*game);
 //     std::cerr << "Starting ExternalSamplingMCCFR on " << game->GetType().short_name
 //               << "..." << std::endl;

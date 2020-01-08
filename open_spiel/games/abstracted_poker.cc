@@ -393,7 +393,9 @@ std::string UniversalPokerState::InformationStateString(Player player) const {
 //   std::cerr << "hole cards: " << hole_cards_[player].ToString() << std::endl;
 //   std::cerr << "board cards: " << board_cards_.ToString() << std::endl;
 //   std::cerr << "hole cards + board cards: " << hole_cards_[player].ToString() + board_cards_.ToString() << std::endl;
-   uint64_t cards_index = GetIndex(acpc_state_.GetRound() + 1, hole_cards_[player].ToString() + board_cards_.ToString());
+   uint64_t cards_index = 0;    // TODO: we simply return 0 if not valid status
+   if (hole_cards_[player].ToString().size() == 4 && (board_cards_.ToString().size() == 0 || board_cards_.ToString().size() >= 6))
+       cards_index = GetIndex(acpc_state_.GetRound() + 1, hole_cards_[player].ToString() + board_cards_.ToString());
 //   std::cerr << "cards index: " << cards_index << std::endl;
 //   std::string cards_string = GetCanonicalHand(acpc_state_.GetRound() + 1, cards_index);
 //   std::string hole_cards_abs_ = cards_string.substr(0, 4);
