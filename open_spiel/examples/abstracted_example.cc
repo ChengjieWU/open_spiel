@@ -16,6 +16,7 @@
 
 #include <memory>
 #include <random>
+#include <open_spiel/games/abstracted_poker.h>
 
 #include "open_spiel/abseil-cpp/absl/flags/flag.h"
 #include "open_spiel/abseil-cpp/absl/flags/parse.h"
@@ -86,13 +87,40 @@ int main(int argc, char **argv) {
         std::cerr << "problem with loading game, exiting..." << std::endl;
         return -1;
     }
+    std::cout << "NewInitialState\n";
+    std::unique_ptr<open_spiel::State> state = game->NewInitialState();
+    std::cout << "LegalActions:\n";
+    std::vector<open_spiel::Action> validActions = state->LegalActions();
+    for (open_spiel::Action a : validActions) {
+        std::cout << state->ActionToString(a) << " ";
+    }
+    std::cout << std::endl;
 
-     open_spiel::algorithms::ExternalSamplingMCCFRSolver solver(*game);
-     std::cerr << "Starting ExternalSamplingMCCFR on " << game->GetType().short_name
-               << "..." << std::endl;
-     for (int i = 0; i < 1; i++) {
-         solver.RunIteration();
-     }
+    state = state->Child(20);
+    state = state->Child(11);
+    state = state->Child(7);
+    state = state->Child(14);
+
+    validActions = state->LegalActions();
+    std::cout << "LegalActions:\n";
+    for (open_spiel::Action a : validActions) {
+        std::cout << state->ActionToString(a) << " ";
+    }
+    std::cout << std::endl;
+    std::vector<int32_t> legalRaiseSizes = dynamic_cast<const open_spiel::universal_poker::abstracted_poker::UniversalPokerState *>(state.get())->GetLegalRaises();
+    std::cout << "LegalRaiseSizes:\n";
+    std::cout << legalRaiseSizes.size() << std::endl;
+    for (int32_t a : legalRaiseSizes) {
+        std::cout << a << " ";
+    }
+    std::cout << std::endl;
+
+//     open_spiel::algorithms::ExternalSamplingMCCFRSolver solver(*game);
+//     std::cerr << "Starting ExternalSamplingMCCFR on " << game->GetType().short_name
+//               << "..." << std::endl;
+//     for (int i = 0; i < 1; i++) {
+//         solver.RunIteration();
+//     }
 
 //    std::cerr << "Starting new game..." << std::endl;
 //    std::unique_ptr<open_spiel::State> state = game->NewInitialState();

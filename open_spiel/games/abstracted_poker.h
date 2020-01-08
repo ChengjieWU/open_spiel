@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "open_spiel/games/universal_poker/acpc_cpp/acpc_game.h"
 #include "open_spiel/games/universal_poker/logic/card_set.h"
@@ -42,7 +43,8 @@ constexpr uint8_t kMaxUniversalPokerPlayers = 10;
 
 // This is the mapping from int to action. E.g. the legal action "0" is fold,
 // the legal action "1" is check/call, etc.
-enum ActionType { kFold = 0, kCall = 1, kBet = 2, kAllIn = 3, kBetHalfPot = 4};
+enum ActionType { kFold = 0, kCall = 1, kBet = 2, kAllIn = 3, kBetHalfPot = 4,
+        kOffAbs = 5};
 enum BettingAbstraction { kFCPA = 0, kFC = 1 };
 std::ostream &operator<<(std::ostream &os, const BettingAbstraction &betting);
 
@@ -74,6 +76,12 @@ class UniversalPokerState : public State {
   uint64_t GetIndex(int round, std::string hand) const;
   std::string GetCanonicalHand(int round, uint64_t  card_id) const;
 
+  std::vector<int32_t> GetLegalRaises() const;
+
+  bool CheckInOffAbsInformationState(std::string info_string) const;
+  int32_t GetOffAbsInformationStateRaise(std::string info_string) const;
+  bool AddOffAbsInformationStateRaise(std::string info_string, int32_t raise);
+
  protected:
   void DoApplyAction(Action action_id) override;
   enum ActionType {
@@ -82,10 +90,13 @@ class UniversalPokerState : public State {
     ACTION_CHECK_CALL = 4,
     ACTION_BET = 8,
     ACTION_ALL_IN = 16,
-    ACTION_BET_HALF_POT = 32
+    ACTION_BET_HALF_POT = 32,
+    ACTION_OFF_ABS = 64
   };
-  static constexpr ActionType ALL_ACTIONS[6] = {
-      ACTION_DEAL, ACTION_FOLD, ACTION_CHECK_CALL, ACTION_BET, ACTION_ALL_IN, ACTION_BET_HALF_POT};
+  static constexpr ActionType ALL_ACTIONS[7] = {
+      ACTION_DEAL, ACTION_FOLD, ACTION_CHECK_CALL, ACTION_BET, ACTION_ALL_IN,
+      ACTION_BET_HALF_POT, ACTION_OFF_ABS};
+  std::map<std::string, int32_t> off_abs_information_state_action_;
 
  public:
   const acpc_cpp::ACPCGame *acpc_game_;
@@ -104,6 +115,7 @@ class UniversalPokerState : public State {
   int32_t potSize_ = 0;
   int32_t allInSize_ = 0;
   int32_t halfpotSize_ = 0;
+  int32_t offabsSize_ = 0;
   std::string actionSequence_;
 
   BettingAbstraction betting_abstraction_;
@@ -142,11 +154,16 @@ class UniversalPokerGame : public Game {
   hand_index::generalIndexer turn_indexer;
   hand_index::generalIndexer river_indexer;
 
+  bool CheckInOffAbsInformationState(std::string info_string) const;
+  int32_t GetOffAbsInformationStateRaise(std::string info_string) const;
+  bool AddOffAbsInformationStateRaise(std::string info_string, int32_t raise);
+
  private:
   std::string gameDesc_;
   const acpc_cpp::ACPCGame acpc_game_;
   std::optional<int> max_game_length_;
   BettingAbstraction betting_abstraction_ = BettingAbstraction::kFCPA;
+  std::map<std::string, int32_t> off_abs_information_state_action_;
 
  public:
   const acpc_cpp::ACPCGame *GetACPCGame() const { return &acpc_game_; }
