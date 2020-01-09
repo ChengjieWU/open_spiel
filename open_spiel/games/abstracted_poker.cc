@@ -18,6 +18,7 @@
 #include <array>
 #include <cstdint>
 #include <utility>
+#include <fstream>
 
 #include "open_spiel/abseil-cpp/absl/strings/str_cat.h"
 #include "open_spiel/abseil-cpp/absl/strings/str_format.h"
@@ -405,7 +406,7 @@ std::string UniversalPokerState::InformationStateString(Player player) const {
 //   std::cerr << board_cards_abs_ << std::endl;
 
    // TODO: we use a fake cluster result here!
-   int cluster_index = cards_index % 200;
+   int cluster_index = GetCluster(acpc_state_.GetRound() + 1, cards_index);
 
    return absl::StrFormat(
        "[Round %i][Player: %i][Pot: %i][Money: %s][InfoAbs: %i][Sequences: %s]",
@@ -673,6 +674,10 @@ bool UniversalPokerState::AddOffAbsInformationStateRaise(std::string info_string
     return ret.second;
 }
 
+int UniversalPokerState::GetCluster(int round, uint64_t card_id) const {
+    return dynamic_cast<const UniversalPokerGame *>(game_.get())->GetCluster(round, card_id);
+}
+
 /**
  * Universal Poker Game Constructor
  * @param params
@@ -694,6 +699,9 @@ UniversalPokerGame::UniversalPokerGame(const GameParameters &params)
     SpielFatalError(absl::StrFormat("bettingAbstraction: %s not supported.",
                                     betting_abstraction));
   }
+  // TODO: we hard code file_name and length here!
+  turn_cluster_ = ReadCluster("/home/maoyh/results/turn_cluster.bin", 55190538);
+  river_cluster_ = ReadCluster("/home/maoyh/results/river_cluster.bin", 2428287420);
 }
 
 std::unique_ptr<State> UniversalPokerGame::NewInitialState() const {
@@ -802,6 +810,37 @@ bool UniversalPokerGame::AddOffAbsInformationStateRaise(const std::string info_s
     std::pair<std::map<std::string, int32_t>::iterator,bool> ret;
     ret = off_abs_information_state_action_.insert(std::pair<std::string, int32_t>(info_string, raise));
     return ret.second;
+}
+
+std::vector<int> UniversalPokerGame::ReadCluster(std::string file_name, uint64_t length) {
+    std::ifstream rf(file_name, std::ios::in | std::ios::binary);
+    if (!rf) {
+        SpielFatalError("Cannot load cluster file!");
+    }
+    std::vector<int > ret;
+    char ch;
+    for (uint64_t i = 0; i < length; i++) {
+        rf.read((char *) &ch, sizeof(char));
+        int num=ch;
+        if (num<0) num+=256;
+        ret.push_back(num);
+    }
+    return ret;
+}
+
+int UniversalPokerGame::GetCluster(int round, uint64_t card_id) const {
+    switch (round) {
+        case 1:
+            return (int)card_id;
+        case 2:
+            return (int)card_id % 200; // TODO: implement this!
+        case 3:
+            return turn_cluster_[card_id];
+        case 4:
+            return river_cluster_[card_id];
+        default:
+            SpielFatalError("Round should between 1 & 4!");
+    }
 }
 
 /**

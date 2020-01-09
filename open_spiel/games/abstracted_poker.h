@@ -82,6 +82,8 @@ class UniversalPokerState : public State {
   int32_t GetOffAbsInformationStateRaise(std::string info_string) const;
   bool AddOffAbsInformationStateRaise(std::string info_string, int32_t raise);
 
+  int GetCluster(int round, uint64_t card_id) const;
+
  protected:
   void DoApplyAction(Action action_id) override;
   enum ActionType {
@@ -158,12 +160,18 @@ class UniversalPokerGame : public Game {
   int32_t GetOffAbsInformationStateRaise(std::string info_string) const;
   bool AddOffAbsInformationStateRaise(std::string info_string, int32_t raise);
 
+  static std::vector<int> ReadCluster(std::string file_name, uint64_t length);
+  int GetCluster(int round, uint64_t card_id) const;
+
  private:
   std::string gameDesc_;
   const acpc_cpp::ACPCGame acpc_game_;
   std::optional<int> max_game_length_;
   BettingAbstraction betting_abstraction_ = BettingAbstraction::kFCPA;
   std::map<std::string, int32_t> off_abs_information_state_action_;
+  std::vector<int> flop_cluster_;
+  std::vector<int> turn_cluster_;
+  std::vector<int> river_cluster_;
 
  public:
   const acpc_cpp::ACPCGame *GetACPCGame() const { return &acpc_game_; }
