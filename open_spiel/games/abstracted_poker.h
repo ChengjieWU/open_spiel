@@ -44,7 +44,7 @@ constexpr uint8_t kMaxUniversalPokerPlayers = 10;
 // This is the mapping from int to action. E.g. the legal action "0" is fold,
 // the legal action "1" is check/call, etc.
 enum ActionType { kFold = 0, kCall = 1, kBet = 2, kAllIn = 3, kBetHalfPot = 4,
-        kOffAbs = 5};
+        kOffAbs = 5, kBetPot = 6};
 enum BettingAbstraction { kFCPA = 0, kFC = 1 };
 std::ostream &operator<<(std::ostream &os, const BettingAbstraction &betting);
 
@@ -93,11 +93,12 @@ class UniversalPokerState : public State {
     ACTION_BET = 8,
     ACTION_ALL_IN = 16,
     ACTION_BET_HALF_POT = 32,
-    ACTION_OFF_ABS = 64
+    ACTION_OFF_ABS = 64,
+    ACTION_BET_POT = 128
   };
-  static constexpr ActionType ALL_ACTIONS[7] = {
+  static constexpr ActionType ALL_ACTIONS[8] = {
       ACTION_DEAL, ACTION_FOLD, ACTION_CHECK_CALL, ACTION_BET, ACTION_ALL_IN,
-      ACTION_BET_HALF_POT, ACTION_OFF_ABS};
+      ACTION_BET_HALF_POT, ACTION_OFF_ABS, ACTION_BET_POT};
   std::map<std::string, int32_t> off_abs_information_state_action_;
 
  public:
@@ -118,6 +119,7 @@ class UniversalPokerState : public State {
   int32_t allInSize_ = 0;
   int32_t halfpotSize_ = 0;
   int32_t offabsSize_ = 0;
+  int32_t betpotSize_ = 0;
   std::string actionSequence_;
 
   BettingAbstraction betting_abstraction_;

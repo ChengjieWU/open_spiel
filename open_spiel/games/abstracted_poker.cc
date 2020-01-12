@@ -118,8 +118,9 @@ REGISTER_SPIEL_GAME(kGameType, Factory);
 // "bet bot" is added? or should "all in" be also added?
 // Add half-pot bet, 4 -> 5
 // Add off-abs raise, 5 -> 6
+// Add 1*pot bet, 6 -> 7
 inline uint32_t GetMaxBettingActions(const acpc_cpp::ACPCGame &acpc_game) {
-  return acpc_game.IsLimitGame() ? 3 : 6;
+  return acpc_game.IsLimitGame() ? 3 : 7;
 }
 
 // namespace universal_poker
@@ -172,6 +173,7 @@ std::string UniversalPokerState::ToString() const {
       buf << ((action == ACTION_DEAL) ? " ACTION_DEAL " : "");
       buf << ((action == ACTION_BET_HALF_POT) ? " ACTION_BET_HALF_POT " : "");
       buf << ((action == ACTION_OFF_ABS) ? " ACTION_OFF_ABS " : "");
+      buf << ((action == ACTION_BET_POT) ? " ACTION_BET_POT " : "");
     }
   }
   buf << "]" << std::endl;
@@ -205,6 +207,9 @@ std::string UniversalPokerState::ActionToString(Player player,
             case open_spiel::universal_poker::abstracted_poker::ActionType::kOffAbs:
                 return absl::StrCat("player=", player, " move=", "r", " money=",
                                     offabsSize_);
+            case open_spiel::universal_poker::abstracted_poker::ActionType::kBetPot:
+                return absl::StrCat("player=", player, " move=", "r", " money=",
+                                    betpotSize_);
             default:
                 SpielFatalError("Invalid action in ActionToString!");
         }
@@ -307,6 +312,10 @@ void UniversalPokerState::InformationStateTensor(
       (*values)[offset + (2 * i)] = 1;
       (*values)[offset + (2 * i) + 1] = 1;
     } else if (actionSeq[i] == 'b') {
+      // Encode raise as 01.
+      (*values)[offset + (2 * i)] = 0;
+      (*values)[offset + (2 * i) + 1] = 0;
+    } else if (actionSeq[i] == 'w') {
       // Encode raise as 01.
       (*values)[offset + (2 * i)] = 0;
       (*values)[offset + (2 * i) + 1] = 0;
@@ -478,6 +487,7 @@ std::vector<Action> UniversalPokerState::LegalActions() const {
   if (ACTION_ALL_IN & possibleActions_) legal_actions.push_back(kAllIn);
   if (ACTION_BET_HALF_POT & possibleActions_) legal_actions.push_back(kBetHalfPot);
   if (ACTION_OFF_ABS & possibleActions_) legal_actions.push_back(kOffAbs);
+  if (ACTION_BET_POT & possibleActions_) legal_actions.push_back(kBetPot);
   return legal_actions;
 }
 
@@ -530,6 +540,11 @@ void UniversalPokerState::DoApplyAction(Action action_id) {
     }
     if (action_int == kOffAbs) {
       ApplyChoiceAction(ACTION_OFF_ABS);
+      return;
+    }
+    if (action_int == kBetPot) {
+      ApplyChoiceAction(ACTION_BET_POT);
+      return;
     }
     SpielFatalError(absl::StrFormat("Action not recognized: %i", action_id));
   }
@@ -645,6 +660,8 @@ std::vector<int32_t> UniversalPokerState::GetLegalRaises() const {
             case open_spiel::universal_poker::abstracted_poker::ActionType::kOffAbs:
                 ret.push_back(offabsSize_);
                 break;
+            case open_spiel::universal_poker::abstracted_poker::ActionType::kBetPot:
+                ret.push_back(betpotSize_);
             default:
                 break;
         }
@@ -700,8 +717,8 @@ UniversalPokerGame::UniversalPokerGame(const GameParameters &params)
                                     betting_abstraction));
   }
   // TODO: we hard code file_name and length here!
-  turn_cluster_ = ReadCluster("/home/maoyh/results/turn_cluster.bin", 55190538);
-  river_cluster_ = ReadCluster("/home/maoyh/results/river_cluster.bin", 2428287420);
+//  turn_cluster_ = ReadCluster("/home/maoyh/results/turn_cluster.bin", 55190538);
+//  river_cluster_ = ReadCluster("/home/maoyh/results/river_cluster.bin", 2428287420);
 }
 
 std::unique_ptr<State> UniversalPokerGame::NewInitialState() const {
@@ -829,6 +846,7 @@ std::vector<int> UniversalPokerGame::ReadCluster(std::string file_name, uint64_t
 }
 
 int UniversalPokerGame::GetCluster(int round, uint64_t card_id) const {
+    return  (int)card_id % 200;
     switch (round) {
         case 1:
             return (int)card_id;
@@ -909,7 +927,7 @@ std::string UniversalPokerGame::parseParameters(const GameParameters &map) {
   return generated_gamedef;
 }
 
-const char *actions = "0df0c000p0000000a000000000000000h0000000000000000000000000000000b";
+const char *actions = "0df0c000p0000000a000000000000000h0000000000000000000000000000000b000000000000000000000000000000000000000000000000000000000000000w";
 
 void UniversalPokerState::ApplyChoiceAction(ActionType action_type) {
   SPIEL_CHECK_GE(cur_player_, 0);  // No chance not terminal.
@@ -938,6 +956,10 @@ void UniversalPokerState::ApplyChoiceAction(ActionType action_type) {
     case ACTION_OFF_ABS:
       acpc_state_.DoAction(acpc_cpp::ACPCState::ACPCActionType::ACPC_RAISE,
               offabsSize_);
+      break;
+    case ACTION_BET_POT:
+      acpc_state_.DoAction(acpc_cpp::ACPCState::ACPCActionType::ACPC_RAISE,
+              betpotSize_);
       break;
     case ACTION_DEAL:
     default:
@@ -996,37 +1018,42 @@ void UniversalPokerState::_CalculateActionsAndNodeType() {
       possibleActions_ |= ACTION_CHECK_CALL;
     }
 
-    potSize_ = 0;
+    int32_t min_bet = 0;
+    potSize_ = 0;   // TODO: 这个是bet现有的currentPot
     allInSize_ = 0;
-    halfpotSize_ = 0;
+    halfpotSize_ = 0;   // raise 0.5 * currentPot
     offabsSize_ = 0;
-    // We have to call this as this sets potSize_ and allInSize_.
-    /* TODO: 这边非常奇怪，受acpc_game_server限制，最小就要bet pot size。这边的half实际上是double */
-    bool valid_to_raise = acpc_state_.RaiseIsValid(&potSize_, &allInSize_);
-    halfpotSize_ = int((potSize_ - acpc_state_.Ante(cur_player_)) * 2) + acpc_state_.Ante(cur_player_);
+    betpotSize_ = 0;    // raise 1 * currentPot
+
+    bool valid_to_raise = acpc_state_.RaiseIsValid(&min_bet, &allInSize_);
     if (betting_abstraction_ == BettingAbstraction::kFC) return;
     if (valid_to_raise) {
       // It's always valid to bet the pot.
       possibleActions_ |= ACTION_BET;
-      if (halfpotSize_ > potSize_ && halfpotSize_ < allInSize_) {
-        possibleActions_ |= ACTION_BET_HALF_POT;
-      }
-      if (CheckInOffAbsInformationState(InformationStateString(cur_player_))) {
-        offabsSize_ = GetOffAbsInformationStateRaise(InformationStateString(cur_player_));
-        if (offabsSize_ > potSize_ && offabsSize_ < allInSize_) {
-            possibleActions_ |= ACTION_OFF_ABS;
-        }
-      }
       if (acpc_game_->IsLimitGame()) {
         potSize_ = 0;
       } else {
         int32_t currentPot =
             acpc_state_.MaxSpend() *
             (acpc_game_->GetNbPlayers() - acpc_state_.NumFolded());
-        potSize_ = currentPot > potSize_ ? currentPot : potSize_;
+        potSize_ = currentPot > min_bet ? currentPot : min_bet;
         potSize_ = allInSize_ < potSize_ ? allInSize_ : potSize_;
         if (allInSize_ > potSize_) {
           possibleActions_ |= ACTION_ALL_IN;
+        }
+        halfpotSize_ = acpc_state_.MaxSpend() + int(currentPot / 2);
+        if (halfpotSize_ >= min_bet && halfpotSize_ < allInSize_) {
+          possibleActions_ |= ACTION_BET_HALF_POT;
+        }
+        betpotSize_ = acpc_state_.MaxSpend() + currentPot;
+        if (betpotSize_ >= min_bet && betpotSize_ < allInSize_) {
+          possibleActions_ |= ACTION_BET_POT;
+        }
+        if (CheckInOffAbsInformationState(InformationStateString(cur_player_))) {
+          offabsSize_ = GetOffAbsInformationStateRaise(InformationStateString(cur_player_));
+          if (offabsSize_ >= min_bet && offabsSize_ < allInSize_) {
+              possibleActions_ |= ACTION_OFF_ABS;
+          }
         }
       }
     }

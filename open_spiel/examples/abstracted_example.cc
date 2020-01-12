@@ -87,37 +87,74 @@ int main(int argc, char **argv) {
         std::cerr << "problem with loading game, exiting..." << std::endl;
         return -1;
     }
-    std::cout << "NewInitialState\n";
     std::unique_ptr<open_spiel::State> state = game->NewInitialState();
-    std::cout << "LegalActions:\n";
+
     std::vector<open_spiel::Action> validActions = state->LegalActions();
+    std::cout << "LegalActions: ";
     for (open_spiel::Action a : validActions) {
         std::cout << state->ActionToString(a) << " ";
     }
-    std::cout << std::endl;
+    std::cout << "Finished" << std::endl;
 
-    state = state->Child(20);
-    state = state->Child(11);
-    state = state->Child(7);
-    state = state->Child(14);
-
+    state = state->Child(0);
     validActions = state->LegalActions();
-    std::cout << "LegalActions:\n";
+    std::cout << "LegalActions: ";
     for (open_spiel::Action a : validActions) {
         std::cout << state->ActionToString(a) << " ";
     }
-    std::cout << std::endl;
-    std::vector<int32_t> legalRaiseSizes = dynamic_cast<const open_spiel::universal_poker::abstracted_poker::UniversalPokerState *>(state.get())->GetLegalRaises();
-    std::cout << "LegalRaiseSizes:\n";
-    std::cout << legalRaiseSizes.size() << std::endl;
-    for (int32_t a : legalRaiseSizes) {
-        std::cout << a << " ";
-    }
-    std::cout << std::endl;
+    std::cout << "Finished" << std::endl;
+
+    state = state->Child(0);
+    state = state->Child(1);
+    state = state->Child(2);
+    state = state->Child(3);
 
     std::cout << state->InformationStateString() << std::endl;
-    state = state->Child(3);
+    std::cout << state->ObservationString() << std::endl;
+    validActions = state->LegalActions();
+    std::cout << "LegalActions: ";
+    for (open_spiel::Action a : validActions) {
+        std::cout << state->ActionToString(a) << " ";
+    }
+    std::cout << "Finished" << std::endl;
+
+    state = state->Child(2);
     std::cout << state->InformationStateString() << std::endl;
+    std::cout << state->ObservationString() << std::endl;
+    validActions = state->LegalActions();
+    std::cout << "LegalActions: ";
+    for (open_spiel::Action a : validActions) {
+        std::cout << state->ActionToString(a) << " ";
+    }
+    std::cout << "Finished" << std::endl;
+
+    state = state->Child(2);
+    std::cout << state->InformationStateString() << std::endl;
+    validActions = state->LegalActions();
+    std::cout << "LegalActions: ";
+    for (open_spiel::Action a : validActions) {
+        std::cout << state->ActionToString(a) << " ";
+    }
+    std::cout << "Finished" << std::endl;
+
+    state = state->Child(6);
+    std::cout << state->InformationStateString() << std::endl;
+    validActions = state->LegalActions();
+    std::cout << "LegalActions: ";
+    for (open_spiel::Action a : validActions) {
+        std::cout << state->ActionToString(a) << " ";
+    }
+    std::cout << "Finished" << std::endl;
+
+    state = state->Child(4);
+    std::cout << state->InformationStateString() << std::endl;
+    validActions = state->LegalActions();
+    std::cout << "LegalActions: ";
+    for (open_spiel::Action a : validActions) {
+        std::cout << state->ActionToString(a) << " ";
+    }
+    std::cout << "Finished" << std::endl;
+
 
 //     open_spiel::algorithms::ExternalSamplingMCCFRSolver solver(*game);
 //     std::cerr << "Starting ExternalSamplingMCCFR on " << game->GetType().short_name
