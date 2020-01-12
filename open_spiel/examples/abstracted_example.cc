@@ -25,7 +25,10 @@
 #include "open_spiel/spiel_utils.h"
 #include "open_spiel/algorithms/external_sampling_mccfr.h"
 #include "open_spiel/games/universal_poker/handIndex/index.h"
+#include "abstracted_poker_search/abstracted_poker_search.h"
 
+using open_spiel::universal_poker::abstracted_poker::AbstractedPokerSearchGame;
+using open_spiel::universal_poker::abstracted_poker::AbstractedPokerSearchState;
 
 ABSL_FLAG(bool, show_legals, false, "Show the legal moves.");
 
@@ -79,9 +82,30 @@ int main(int argc, char **argv) {
     int seed = 0;
     std::mt19937 rng(seed ? seed : time(0));
 
+    // 交互式的game
     // Create the game.
-    std::cerr << "Creating game..\n"
-              << std::endl;
+//    std::cerr << "Creating game..\n" << std::endl;
+//    std::shared_ptr<AbstractedPokerSearchGame> game(new AbstractedPokerSearchGame(params, 0, seed));
+//    std::shared_ptr<AbstractedPokerSearchState> state = game->NewInitialState();
+//
+//    while (!state->IsTerminal()) {
+//        std::cerr << "AI turn\n";
+//        std::cerr << state->ObservationString() << std::endl;
+//        std::cerr << state->InformationStateString() << std::endl;
+//        for (auto a : state->LegalActions()) {
+//            std::cerr << a << " ";
+//        }
+//        std::cerr << std::endl;
+//
+//        open_spiel::Action ai;
+//        std::cin >> ai;
+//
+//        state = state->Child(ai);
+//    }
+
+    // 用于 Abstracted Poker 的测试
+    // Create the game.
+    std::cerr << "Creating game..\n" << std::endl;
     std::shared_ptr<const open_spiel::Game> game = open_spiel::LoadGame("abstracted_poker", params);
     if (!game) {
         std::cerr << "problem with loading game, exiting..." << std::endl;
