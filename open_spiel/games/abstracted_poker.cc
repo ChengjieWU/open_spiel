@@ -423,7 +423,6 @@ std::string UniversalPokerState::InformationStateString(Player player) const {
 //   std::cerr << hole_cards_abs_ << std::endl;
 //   std::cerr << board_cards_abs_ << std::endl;
 
-   // TODO: we use a fake cluster result here!
    int cluster_index = GetCluster(acpc_state_.GetRound() + 1, cards_index);
 
    return absl::StrFormat(
@@ -735,8 +734,9 @@ UniversalPokerGame::UniversalPokerGame(const GameParameters &params)
                                     betting_abstraction));
   }
   // TODO: we hard code file_name and length here!
-//  turn_cluster_ = ReadCluster("/home/maoyh/results/turn_cluster.bin", 55190538);
-//  river_cluster_ = ReadCluster("/home/maoyh/results/river_cluster.bin", 2428287420);
+  flop_cluster_ = ReadCluster("/home/maoyh/results/flop_cluster.bin", 1286792);
+  turn_cluster_ = ReadCluster("/home/maoyh/results/turn_cluster.bin", 55190538);
+  river_cluster_ = ReadCluster("/home/maoyh/results/river_cluster.bin", 2428287420);
 }
 
 std::unique_ptr<State> UniversalPokerGame::NewInitialState() const {
@@ -864,12 +864,11 @@ std::vector<int> UniversalPokerGame::ReadCluster(std::string file_name, uint64_t
 }
 
 int UniversalPokerGame::GetCluster(int round, uint64_t card_id) const {
-    return  (int)card_id % 200;
     switch (round) {
         case 1:
             return (int)card_id;
         case 2:
-            return (int)card_id % 200; // TODO: implement this!
+            return flop_cluster_[card_id];
         case 3:
             return turn_cluster_[card_id];
         case 4:
