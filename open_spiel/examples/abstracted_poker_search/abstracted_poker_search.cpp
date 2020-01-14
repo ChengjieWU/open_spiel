@@ -13,7 +13,8 @@ AbstractedPokerSearchState::AbstractedPokerSearchState(
     : state_(game), AI(AI), rng_(rng) {}
 
 std::unique_ptr<AbstractedPokerSearchState> AbstractedPokerSearchState::Clone() const {
-    return std::unique_ptr<AbstractedPokerSearchState>(new AbstractedPokerSearchState(*this));
+    // return std::unique_ptr<AbstractedPokerSearchState>(new AbstractedPokerSearchState(*this));
+    return std::make_unique<AbstractedPokerSearchState>(*this);
 }
 
 bool AbstractedPokerSearchState::IsTerminal() const {
@@ -38,6 +39,14 @@ std::string AbstractedPokerSearchState::InformationStateString() const {
 
 std::string AbstractedPokerSearchState::ObservationString() const {
     return state_.ObservationString(CurrentPlayer());
+}
+
+std::string AbstractedPokerSearchState::PlayingString() const {
+    return state_.PlayingString(CurrentPlayer());
+}
+
+std::string AbstractedPokerSearchState::ToString() const {
+    return state_.ToString();
 }
 
 std::vector<Action> AbstractedPokerSearchState::LegalActions() const {
@@ -73,16 +82,32 @@ Action AbstractedPokerSearchState::GetOpponentAction() {
     SPIEL_CHECK_FALSE(IsChanceNode() || IsTerminal());
     SPIEL_CHECK_GE(CurrentPlayer(), 0);
     // TODO: So far, we print all information and get input by cmd
-    std::cout << state_.ObservationString(CurrentPlayer()) << std::endl;
+    std::cout << state_.PlayingString(CurrentPlayer()) << std::endl;
 
-    std::cout << "Legal actions are:\n";
-    std::vector<open_spiel::Action> validActions = state_.LegalActions();
-    for (open_spiel::Action a : validActions) {
-        std::cout << a << ": " << state_.ActionToString(CurrentPlayer(), a) << ";\n";
+    if (state_.FoldIsValid()) {
+        std::cout << "0: f; ";
     }
+    if (state_.CallIsValid()) {
+        std::cout << "1: c; ";
+    }
+    int32_t min_bet, max_bet;
+    bool valid_to_raise = state_.GetValidToRaise(&min_bet, &max_bet);
+    if (valid_to_raise) {
+        std::cout << "valid raise interval: " << min_bet << ", " << max_bet << std::endl;
+    }
+
     Action ret;
     std::cin >> ret;
-    return ret;
+    if (ret == 0 || ret == 1) {
+        return ret;
+    }
+    else if (ret >= min_bet && ret <= max_bet) {
+        if (state_.AddOffAbsInformationStateRaise(state_.InformationStateString(CurrentPlayer()), ret)) {
+            return ActionType::kOffAbs;
+        }
+        SpielFatalError("Error! Off abs action already exists for this infostate!");
+    }
+    SpielFatalError("Illegal input!");
 }
 
 std::unique_ptr<AbstractedPokerSearchState> AbstractedPokerSearchState::Child(Action action) {

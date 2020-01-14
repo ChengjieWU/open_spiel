@@ -104,7 +104,10 @@ const GameType kGameType{
      // Specify which actions are available to the player, in both limit and
      // nolimit games. Available options are: "fc" for fold and check/call.
      // "fcpa" for fold, check/call, bet pot and all in (default).
-     {"bettingAbstraction", GameParameter(std::string("fcpa"))}}};
+     {"bettingAbstraction", GameParameter(std::string("fcpa"))},
+     // Whether or not to read infostate abstraction clusters.
+     // Use false for debug.
+     {"readCluster", GameParameter(true)}}};
 
 std::shared_ptr<const Game> Factory(const GameParameters &params) {
   return std::shared_ptr<const Game>(new UniversalPokerGame(params));
@@ -705,11 +708,60 @@ bool UniversalPokerState::AddOffAbsInformationStateRaise(std::string info_string
     /* Since we get a const Game pointer, we can only add it to state. */
     std::pair<std::map<std::string, int32_t>::iterator,bool> ret;
     ret = off_abs_information_state_action_.insert(std::pair<std::string, int32_t>(info_string, raise));
+    if (ret.second) {
+        /* When possibleActions_ calculated, OFF_ABS was not added */
+        /* So we need to add it now to enable instant moving on of the game */
+        possibleActions_ |= ACTION_OFF_ABS;
+        offabsSize_ = raise;
+    }
     return ret.second;
 }
 
 int UniversalPokerState::GetCluster(int round, uint64_t card_id) const {
     return dynamic_cast<const UniversalPokerGame *>(game_.get())->GetCluster(round, card_id);
+}
+
+bool UniversalPokerState::GetValidToRaise(int32_t *min_bet, int32_t *max_bet) const {
+    SPIEL_CHECK_GE(CurrentPlayer(), 0);
+    return acpc_state_.RaiseIsValid(min_bet, max_bet);
+}
+
+bool UniversalPokerState::FoldIsValid() const {
+    SPIEL_CHECK_GE(CurrentPlayer(), 0);
+    return (bool)(ACTION_FOLD & possibleActions_);
+}
+
+bool UniversalPokerState::CallIsValid() const {
+    SPIEL_CHECK_GE(CurrentPlayer(), 0);
+    return (bool)(ACTION_CHECK_CALL & possibleActions_);
+}
+
+std::string UniversalPokerState::PlayingString(Player player) const {
+    SPIEL_CHECK_GE(player, 0);
+    SPIEL_CHECK_LT(player, acpc_game_->GetNbPlayers());
+    std::string result;
+
+    const uint32_t pot = acpc_state_.MaxSpend() *
+                         (acpc_game_->GetNbPlayers() - acpc_state_.NumFolded());
+    absl::StrAppend(&result, "[Round ", acpc_state_.GetRound(),
+                    "][Player: ", CurrentPlayer(), "][Pot: ", pot, "][Money:");
+    for (auto p = Player{0}; p < acpc_game_->GetNbPlayers(); p++) {
+        absl::StrAppend(&result, " ", acpc_state_.Money(p));
+    }
+    // Add the player's private cards
+    if (player != kChancePlayerId) {
+        absl::StrAppend(&result, "[Private: ", hole_cards_[player].ToString(), "]");
+    }
+    // Show public board as well
+    absl::StrAppend(&result, "[Public: ", board_cards_.ToString(), "]");
+    // Adding the contribution of each players to the pot
+    absl::StrAppend(&result, "[Ante:");
+    for (auto p = Player{0}; p < num_players_; p++) {
+        absl::StrAppend(&result, " ", acpc_state_.Ante(p));
+    }
+    absl::StrAppend(&result, "]");
+
+    return result;
 }
 
 /**
@@ -733,10 +785,13 @@ UniversalPokerGame::UniversalPokerGame(const GameParameters &params)
     SpielFatalError(absl::StrFormat("bettingAbstraction: %s not supported.",
                                     betting_abstraction));
   }
-  // TODO: we hard code file_name and length here!
-  flop_cluster_ = ReadCluster("/home/maoyh/results/flop_cluster.bin", 1286792);
-  turn_cluster_ = ReadCluster("/home/maoyh/results/turn_cluster.bin", 55190538);
-  river_cluster_ = ReadCluster("/home/maoyh/results/river_cluster.bin", 2428287420);
+  read_cluster_ = ParameterValue<bool>("readCluster");
+  if (read_cluster_) {
+    // TODO: we hard code file_name and length here!
+    flop_cluster_ = ReadCluster("/home/maoyh/results/flop_cluster.bin", 1286792);
+    turn_cluster_ = ReadCluster("/home/maoyh/results/turn_cluster.bin", 55190538);
+    river_cluster_ = ReadCluster("/home/maoyh/results/river_cluster.bin", 2428287420);
+  }
 }
 
 std::unique_ptr<State> UniversalPokerGame::NewInitialState() const {
@@ -864,18 +919,24 @@ std::vector<int> UniversalPokerGame::ReadCluster(std::string file_name, uint64_t
 }
 
 int UniversalPokerGame::GetCluster(int round, uint64_t card_id) const {
-    switch (round) {
-        case 1:
-            return (int)card_id;
-        case 2:
-            return flop_cluster_[card_id];
-        case 3:
-            return turn_cluster_[card_id];
-        case 4:
-            return river_cluster_[card_id];
-        default:
-            SpielFatalError("Round should between 1 & 4!");
+    if (read_cluster_) {
+        switch (round) {
+            case 1:
+                return (int)card_id;
+            case 2:
+                return flop_cluster_[card_id];
+            case 3:
+                return turn_cluster_[card_id];
+            case 4:
+                return river_cluster_[card_id];
+            default:
+                SpielFatalError("Round should between 1 & 4!");
+        }
     }
+    else if (round >= 1 && round <= 4) {
+        return int(card_id % 200);
+    }
+    SpielFatalError("Round should between 1 & 4!");
 }
 
 /**

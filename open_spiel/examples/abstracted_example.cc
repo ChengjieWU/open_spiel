@@ -1,17 +1,3 @@
-// Copyright 2019 DeepMind Technologies Ltd. All rights reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 #include <unistd.h>
 
 #include <memory>
@@ -25,10 +11,6 @@
 #include "open_spiel/spiel_utils.h"
 #include "open_spiel/algorithms/external_sampling_mccfr.h"
 #include "open_spiel/games/universal_poker/handIndex/index.h"
-#include "abstracted_poker_search/abstracted_poker_search.h"
-
-using open_spiel::universal_poker::abstracted_poker::AbstractedPokerSearchGame;
-using open_spiel::universal_poker::abstracted_poker::AbstractedPokerSearchState;
 
 ABSL_FLAG(bool, show_legals, false, "Show the legal moves.");
 
@@ -48,6 +30,8 @@ ABSL_FLAG(std::string, raiseSize, "100 100", "Raise size for each round.");
 ABSL_FLAG(std::string, maxRaises, "", "Max raise times for each round.");
 
 ABSL_FLAG(std::string, bettingAbstraction, "fcpa", "Which actions are available to the player, 'fcpa' or 'fc'.");
+
+ABSL_FLAG(bool, readCluster, false, "Whether to read infostate cluster abstraction");
 
 void PrintLegalActions(const open_spiel::State &state,
                        open_spiel::Player player,
@@ -77,31 +61,11 @@ int main(int argc, char **argv) {
     params["raiseSize"] = open_spiel::GameParameter(absl::GetFlag(FLAGS_raiseSize));
     params["maxRaises"] = open_spiel::GameParameter(absl::GetFlag(FLAGS_maxRaises));
     params["bettingAbstraction"] = open_spiel::GameParameter(absl::GetFlag(FLAGS_bettingAbstraction));
+    params["readCluster"] = open_spiel::GameParameter(absl::GetFlag(FLAGS_readCluster));
 
     // Random number generator.
     int seed = 0;
     std::mt19937 rng(seed ? seed : time(0));
-
-    // 交互式的game
-    // Create the game.
-//    std::cerr << "Creating game..\n" << std::endl;
-//    std::shared_ptr<AbstractedPokerSearchGame> game(new AbstractedPokerSearchGame(params, 0, seed));
-//    std::shared_ptr<AbstractedPokerSearchState> state = game->NewInitialState();
-//
-//    while (!state->IsTerminal()) {
-//        std::cerr << "AI turn\n";
-//        std::cerr << state->ObservationString() << std::endl;
-//        std::cerr << state->InformationStateString() << std::endl;
-//        for (auto a : state->LegalActions()) {
-//            std::cerr << a << " ";
-//        }
-//        std::cerr << std::endl;
-//
-//        open_spiel::Action ai;
-//        std::cin >> ai;
-//
-//        state = state->Child(ai);
-//    }
 
     // 用于 Abstracted Poker 的测试
     // Create the game.

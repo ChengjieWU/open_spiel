@@ -32,7 +32,9 @@ public:
     std::vector<std::pair<Action, double>> ChanceOutcomes() const;
     std::string InformationStateString() const;
     std::string ObservationString() const;
+    std::string PlayingString() const;
     std::vector<Action> LegalActions() const;
+    std::string ToString() const;
 
     std::unique_ptr<AbstractedPokerSearchState> ChildPass();
     std::unique_ptr<AbstractedPokerSearchState> Child(Action action);

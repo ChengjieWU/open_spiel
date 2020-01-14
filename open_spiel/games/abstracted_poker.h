@@ -84,6 +84,11 @@ class UniversalPokerState : public State {
 
   int GetCluster(int round, uint64_t card_id) const;
 
+  bool GetValidToRaise(int32_t *min_bet, int32_t *max_bet) const;
+  bool FoldIsValid() const;
+  bool CallIsValid() const;
+  std::string PlayingString(Player player) const;
+
  protected:
   void DoApplyAction(Action action_id) override;
   enum ActionType {
@@ -176,6 +181,7 @@ class UniversalPokerGame : public Game {
   std::vector<int> flop_cluster_;
   std::vector<int> turn_cluster_;
   std::vector<int> river_cluster_;
+  bool read_cluster_ = true;
 
  public:
   const acpc_cpp::ACPCGame *GetACPCGame() const { return &acpc_game_; }
